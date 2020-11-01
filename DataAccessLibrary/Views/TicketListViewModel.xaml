@@ -1,0 +1,119 @@
+﻿<Page
+    x:Class="DataAccessLibrary.Views.TicketListViewModel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:DataAccessLibrary.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+
+
+
+    <Grid Margin="20">
+        <StackPanel>
+            <TextBlock x:Name="tbListHeader" Text="Open tickets" FontWeight="Bold" FontSize="36"/>
+            <controls:DataGrid x:Name="dgTicketTable"
+                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                           AutoGenerateColumns="False" ItemsSource="{x:Bind OpenTickets}">
+
+                <controls:DataGrid.RowDetailsTemplate>
+                    <DataTemplate >
+                        <StackPanel Padding="20">
+
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Details for ticket #" FontWeight="Bold" FontSize="18"/>
+                                <TextBlock Text="{Binding TicketId}" FontWeight="Bold" FontSize="18"/>
+                                <Rectangle Width="1000" Height="2"/>
+                            </StackPanel>
+                            <Border BorderBrush="DimGray"  BorderThickness="1" HorizontalAlignment="Left" Width="100"/>
+
+                            <!-- Ticket ID, tidpunkt, kundens id, kategorisering av ärendet, en beskrivning av ärendet, ärendestatus. -->
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="ID: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                                    <TextBlock Text="{Binding Id}" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Created: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                                    <TextBlock Text="{Binding Created}" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Customer: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                                    <TextBlock Text="{Binding CustomerId}" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Category: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                                    <TextBlock Text="{Binding Category}" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Description: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                                    <TextBlock Text="{Binding Description}" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Status: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                                    <TextBlock Text="{Binding Status}" />
+                                </StackPanel>
+
+
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </controls:DataGrid.RowDetailsTemplate>
+
+                <controls:DataGrid.Columns>
+                    <controls:DataGridTemplateColumn Header="ID">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding TicketId}" HorizontalTextAlignment="Center" Padding="5" />
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Customer" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate >
+                                <TextBlock Text="{Binding CustomerId}" HorizontalTextAlignment="Center" Padding="5" />
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Category">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Category}" HorizontalTextAlignment="Center" Padding="5" />
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Description">
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Description}" HorizontalTextAlignment="Center" Padding="5" TextWrapping="Wrap"/>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+
+                    <controls:DataGridTemplateColumn Header="Status" >
+                        <controls:DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Status}" HorizontalTextAlignment="Center" Padding="5"/>
+                            </DataTemplate>
+                        </controls:DataGridTemplateColumn.CellTemplate>
+                    </controls:DataGridTemplateColumn>
+                </controls:DataGrid.Columns>
+
+
+            </controls:DataGrid>
+
+        </StackPanel>
+    </Grid>
+</Page>
