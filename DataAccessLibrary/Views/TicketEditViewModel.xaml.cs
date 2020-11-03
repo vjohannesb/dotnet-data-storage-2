@@ -1,5 +1,4 @@
 ﻿using DataAccessLibrary.Models;
-using DataAccessLibrary.Views;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,32 +21,23 @@ namespace DataAccessLibrary.Views
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class TicketCreationViewModel : Page
+    public sealed partial class TicketEditViewModel : Page
     {
-        public TicketCreationViewModel()
+        private readonly Ticket _ticket;
+        private List<Customer> Customers => ViewModel.Customers;
+
+        public TicketEditViewModel(Ticket ticket)
         {
             this.InitializeComponent();
-            tbCreated.Text = DateTime.Now.ToString("g");
+            _ticket = ticket;
 
+            SetUpEdit();
         }
 
-        private void btnSaveTicket_Click(object sender, RoutedEventArgs e)
+        public void SetUpEdit()
         {
-
-        }
-
-        private void btnCancelNewTicket_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void btnAddComment_Click(object sender, RoutedEventArgs e)
-        {
-
+            //cbxCustomers.SelectedIndex = 0;
+            //cbxStatus.SelectedIndex = 0;
         }
     }
 }

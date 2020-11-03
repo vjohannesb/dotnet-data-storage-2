@@ -1,12 +1,15 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 namespace DataAccessLibrary.Models
 {
-    public partial class Ticket
+    public class Ticket
     {
         public enum TicketStatus
         {
@@ -15,38 +18,48 @@ namespace DataAccessLibrary.Models
             Closed
         }
 
-        public Ticket()
+        public Ticket(string category, string description, string customerId, TicketStatus status)
         {
-            Comments = new ObservableCollection<Comment>();
-        }
-        public Ticket(int ticketId, string category, int customerId, string description, int status)
-        {
-            Id = ticketId;
-            Category = category;
-            CustomerId = customerId;
-            Description = description;
-            Status = status;
+            Id = Guid.NewGuid().ToString();
             Created = DateTime.Now.ToString("g");
+            Comments = new ObservableCollection<Comment>();
+            Type = "ticket";
+
+            Category = category;
+            Description = description;
+            CustomerId = customerId;
+            Status = status;
+
+            //var listItem = Comments.Single(c => c.Id == Id);
         }
 
-        [Key]
-        public int Id { get; set; }
-        [Required]
-        [StringLength(20)]
-        public string Created { get; set; }
-        [Required]
-        [StringLength(50)]
-        public string Category { get; set; }
-        [Required]
-        public string Description { get; set; }
-        public int Status { get; set; }
-        public int CustomerId { get; set; }
+        [JsonProperty(PropertyName = "id")]
+        public string Id { get; }
 
-        [ForeignKey(nameof(CustomerId))]
-        [InverseProperty(nameof(Models.Customer.Tickets))]
-        public virtual Customer Customer { get; set; }
-        [InverseProperty("Ticket")]
-        public virtual ObservableCollection<Comment> Comments { get; set; }
+        [JsonProperty(PropertyName = "created")]
+        public string Created { get; set; }
+
+        [JsonProperty(PropertyName = "category")]
+        public string Category { get; set; }
+
+        [JsonProperty(PropertyName = "description")]
+        public string Description { get; set; }
+
+        // Spara Enumvärdet som string när det serialiseras
+        [JsonProperty(PropertyName = "status")]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public TicketStatus Status { get; set; }
+
+        public string StatusString => Status.ToString();
+
+        [JsonProperty(PropertyName = "customerid")]
+        public string CustomerId { get; set; }
+
+        [JsonProperty(PropertyName = "type")]
+        public string Type { get; }
+
+        [JsonProperty(PropertyName = "comments")]
+        public ObservableCollection<Comment> Comments { get; set; }
 
     }
 }

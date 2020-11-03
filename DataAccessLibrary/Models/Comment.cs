@@ -1,4 +1,5 @@
 ﻿using DataAccessLibrary.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -6,19 +7,27 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccessLibrary.Models
 {
-    public partial class Comment
+    public class Comment
     {
-        [Key]
-        public int Id { get; set; }
-        public int TicketId { get; set; }
-        [Required]
-        [StringLength(20)]
-        public string Created { get; set; }
-        [Required]
-        public string Text { get; set; }
+        public Comment(string ticketId, string content)
+        {
+            Id = Guid.NewGuid().ToString();
+            Created = DateTime.Now.ToString("g");
 
-        [ForeignKey(nameof(TicketId))]
-        [InverseProperty(nameof(Models.Ticket.Comments))]
-        public virtual Ticket Ticket { get; set; }
+            TicketId = ticketId;
+            Content = content;
+        }
+
+        [JsonProperty(PropertyName = "id")]
+        public string Id { get; }
+
+        [JsonProperty(PropertyName = "ticketId")]
+        public string TicketId { get; set; }
+
+        [JsonProperty(PropertyName = "created")]
+        public string Created { get; set; }
+
+        [JsonProperty(PropertyName = "content")]
+        public string Content { get; set; }
     }
 }

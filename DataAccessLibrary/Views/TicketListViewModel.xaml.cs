@@ -1,6 +1,12 @@
 ﻿using DataAccessLibrary.Models;
+using DataAccessLibrary.Services;
 using Microsoft.Toolkit.Uwp.UI.Controls;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
@@ -11,38 +17,20 @@ namespace DataAccessLibrary.Views
 
     public sealed partial class TicketListViewModel : Page
     {
-        //private ViewModel viewModel = new ViewModel();
-
-        public ObservableCollection<Ticket> OpenTickets = new ObservableCollection<Ticket>();
-        public ObservableCollection<Ticket> ClosedTickets = new ObservableCollection<Ticket>();
-
-        public static DataGrid ticketDataGrid;
-        public static TextBlock ticketListHeader;
+        public DataGrid ticketDataGrid => dgTicketTable;
+        public TextBlock ticketListHeader => tbListHeader;
 
         public TicketListViewModel()
         {
-            this.InitializeComponent();
+            InitializeComponent();
 
-            ticketDataGrid = dgTicketTable;
-            ticketListHeader = tbListHeader;
-            
-
-            OpenTickets = new ObservableCollection<Ticket>() {
-                new Ticket(1, "Error1", 1001, "abcdefhgihoaksdjlkaj sdk ajsld kasjd lasi djasidjasdl iajsd laijs dlasi jdals ijdals dijasld ijasdia jsdliaj sdlas d", (int)Ticket.TicketStatus.Open),
-                new Ticket(2, "Error2", 1002, "Something went wrong", (int)Ticket.TicketStatus.Open),
-                new Ticket(3, "Error3", 1003, "Something went wrong", (int)Ticket.TicketStatus.Active)
-            };
-
-            ClosedTickets = new ObservableCollection<Ticket>() {
-                new Ticket(4, "Error4", 1004, "Something went wrong", (int)Ticket.TicketStatus.Closed),
-                new Ticket(5, "Error5", 1005, "Something went wrong", (int)Ticket.TicketStatus.Closed),
-                new Ticket(6, "Error6", 1006, "Something went wrong", (int)Ticket.TicketStatus.Closed)
-            };
+            DbService.UpdateTicketList().GetAwaiter();
         }
 
-        private void btnShowHideDetails_Click(object sender, RoutedEventArgs e)
+        private void btnEditTicket_Click(object sender, RoutedEventArgs e)
         {
-
+            var ticket = ((FrameworkElement)sender).DataContext as Ticket;
+            ViewModel.mainPage.DataContext = new TicketEditViewModel(ticket);
         }
     }
 }

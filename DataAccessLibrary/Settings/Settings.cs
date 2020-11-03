@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DataAccessLibrary
+namespace DataAccessLibrary.Settings
 {
-    public class Class1
+    class Settings
     {
     }
 }

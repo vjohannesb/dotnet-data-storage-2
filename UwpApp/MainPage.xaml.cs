@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using UwpApp.Views;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -17,6 +16,13 @@ using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 using DataAccessLibrary.Models;
 using DataAccessLibrary.Views;
+using System.Threading.Tasks;
+using System.Diagnostics;
+using Windows.Storage;
+using DataAccessLibrary.Services;
+using DataAccessLibrary.Settings;
+using Windows.Storage.AccessCache;
+using System.Collections.ObjectModel;
 
 /* Ärendehanteringssystem
  * Meny till vänster
@@ -54,27 +60,34 @@ namespace UwpApp
         TicketCreationViewModel ticketCreationViewModel = new TicketCreationViewModel();
         TicketListViewModel ticketListViewModel = new TicketListViewModel();
 
-        DataGrid ticketDataGrid = TicketListViewModel.ticketDataGrid;
-        TextBlock ticketListHeader = TicketListViewModel.ticketListHeader;
-
+        DataGrid ticketDataGrid => ticketListViewModel.ticketDataGrid;
+        TextBlock ticketListHeader => ticketListViewModel.ticketListHeader;
 
         public MainPage()
         {
-            this.InitializeComponent();
+            InitializeComponent();
+            ViewModel.mainPage = this;
 
+            InitDbAsync().GetAwaiter();
         }
+
+        private static async Task InitDbAsync() 
+            => await DbService.InitCosmosDbAsync();
+
+        private static async Task GetCustomersAsync(List<Customer> customers)
+            => customers = await DbService.GetAllCustomersAsync();
 
         private void btnOpenTickets_Click(object sender, RoutedEventArgs e)
         {
             ticketListHeader.Text = "Open tickets";
-            ticketDataGrid.SetBinding(DataGrid.ItemsSourceProperty, new Binding { Source = ticketListViewModel.OpenTickets });
+            ticketDataGrid.ItemsSource = ViewModel.OpenTickets;
             DataContext = ticketListViewModel;
         }
 
         private void btnClosedTickets_Click(object sender, RoutedEventArgs e)
         {
             ticketListHeader.Text = "Closed tickets";
-            ticketDataGrid.SetBinding(DataGrid.ItemsSourceProperty, new Binding { Source = ticketListViewModel.ClosedTickets });
+            ticketDataGrid.ItemsSource = ViewModel.ClosedTickets;
             DataContext = ticketListViewModel;
         }
 

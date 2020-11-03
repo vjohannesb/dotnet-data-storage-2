@@ -1,27 +1,38 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DataAccessLibrary.Models
 {
-    public partial class Customer
+    public class Customer
     {
-        public Customer()
+        public Customer(string firstName, string lastName)
         {
-            Tickets = new HashSet<Ticket>();
+            Id = Guid.NewGuid().ToString();
+            Type = "customer";
+            
+            FirstName = firstName;
+            LastName = lastName;
         }
 
-        [Key]
-        public int Id { get; set; }
-        [Required]
-        [StringLength(50)]
+        [JsonProperty(PropertyName = "id")]
+        public string Id { get; }
+
+        [JsonProperty(PropertyName = "firstName")]
         public string FirstName { get; set; }
-        [Required]
-        [StringLength(50)]
+
+        [JsonProperty(PropertyName = "lastName")]
         public string LastName { get; set; }
 
-        [InverseProperty("Customer")]
-        public virtual ICollection<Ticket> Tickets { get; set; }
+        [JsonProperty(PropertyName = "type")]
+        public string Type { get; }
+
+
+        public string FullName => $"{FirstName} {LastName}";
+
+        public string CustomerDisplay => $"{FullName} ({Id})";
     }
 }

@@ -34,7 +34,8 @@
 
         <ContentControl x:Name="ccContentView" Content="{Binding}" Grid.Column="1" 
                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
-                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                        x:FieldModifier="Public"/>
 
     </Grid>
 </Page>
