@@ -8,7 +8,110 @@
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Grid Margin="20">
+    <Grid Margin="10, 0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Ticket ID, tidpunkt, kundens id, kategorisering av ärendet, en beskrivning av ärendet, ärendestatus. -->
+
+        <!-- Header -->
+        <StackPanel Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3">
+            <TextBlock x:Name="tbCreateHeader" Text="Edit ticket" 
+                       FontWeight="Bold" FontSize="36"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Ticket created: " FontWeight="Bold" Foreground="Gray"/>
+                <TextBlock x:Name="tbCreated" Text="{x:Bind _ticket.Created}" Foreground="Gray" Margin="5, 0"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Category combobox -->
+        <ComboBox x:Name="cbxCategory" Header="Category"
+                  Grid.Row="1" Grid.Column="0"
+                  HorizontalAlignment="Stretch"
+                  Padding="10" Margin="0, 10"
+                  ItemsSource="{x:Bind Categories}">
+        </ComboBox>
+
+        <!-- Status combobox -->
+        <ComboBox x:Name="cbxStatus" Header="Status"
+                  Grid.Row="1" Grid.Column="1"
+                  HorizontalAlignment="Stretch"
+                  Padding="10" Margin="10">
+            <ComboBoxItem Content="Open" />
+            <ComboBoxItem Content="Active" />
+            <ComboBoxItem Content="Closed" />
+        </ComboBox>
+
+        <!-- Customer combobox -->
+        <ComboBox x:Name="cbxCustomer" Header="Customer"
+                  Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2"
+                  HorizontalAlignment="Stretch" 
+                  Padding="10" Margin="0, 10"
+                  ItemsSource="{x:Bind _customers}"
+                  DisplayMemberPath="CustomerDisplay"
+                  SelectedValuePath="Id">
+        </ComboBox>
+
+        <!-- Description -->
+        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" >
+            <TextBlock Text="Description" FontWeight="Bold"/>
+            <TextBlock Text="{x:Bind _ticket.Description}"
+                 HorizontalAlignment="Stretch"
+                 TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+        </StackPanel>
+
+
+        <!-- Comment box & button -->
+        <TextBox x:Name="tbxComment" PlaceholderText="Add a comment..."
+                 Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" 
+                 HorizontalAlignment="Stretch" 
+                 AcceptsReturn="True" TextWrapping="Wrap"
+                 Padding="8" Margin="0, 12, 12, 12" />
+
+        <Button x:Name="btnAddComment" Content="Submit comment" Click="btnAddComment_Click"
+                Grid.Row="3" Grid.Column="3" 
+                Padding="8" HorizontalAlignment="Stretch"/>
+
+        <!-- Comment ListView -->
+        <ListView Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="4" Header="Comments"
+                  ItemsSource="{x:Bind _ticket.Comments}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Foreground="Gray" 
+                                   FontSize="12" VerticalAlignment="Center" 
+                                   Text="{Binding Created}" />
+                        <TextBlock Grid.Column="1" Margin="5, 0" 
+                                   TextWrapping="Wrap"
+                                   Text="{Binding Content}" />
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Cancel & Save Buttons -->
+        <StackPanel Orientation="Horizontal" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
+            <Button x:Name="btnCancelEdit" Content="Cancel" Click="btnCancelEdit_Click"
+                        Padding="20, 8" Margin="5, 0"/>
+            <Button x:Name="btnSaveEdit" Content="Save" Click="btnSaveEdit_Click"
+                        Padding="20, 8" Margin="5, 0"/>
+        </StackPanel>
     </Grid>
 </Page>

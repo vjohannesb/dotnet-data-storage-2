@@ -32,10 +32,17 @@
 
         <!-- Ticket ID, tidpunkt, kundens id, kategorisering av ärendet, en beskrivning av ärendet, ärende status. -->
 
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock x:Name="tbLoadingCosmos" Text="Connecting to Cosmos DB..." 
+                       HorizontalAlignment="Center"/>
+
+            <TextBlock x:Name="tbLoadingBlob" Text="Connecting to Azure Blob Storage..." 
+                       HorizontalAlignment="Center" Visibility="Collapsed"/>
+        </StackPanel>
+
         <ContentControl x:Name="ccContentView" Content="{Binding}" Grid.Column="1" 
                         HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
-                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                        x:FieldModifier="Public"/>
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
 
     </Grid>
 </Page>

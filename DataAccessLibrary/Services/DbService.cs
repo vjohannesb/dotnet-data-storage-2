@@ -11,17 +11,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
+using Windows.UI.Xaml.Controls;
 
 namespace DataAccessLibrary.Services
 {
     public class DbService
     {
-        private static ObservableCollection<Ticket> _openTickets = ViewModel.OpenTickets;
-        private static ObservableCollection<Ticket> _closedTickets = ViewModel.ClosedTickets;
-
         private static CosmosClient cosmosClient;
         private static Database database;
         private static Container container;
+
+        private static bool _dbLoaded = false;
 
         #region Initialize Cosmos Database + Container
 
@@ -33,24 +33,33 @@ namespace DataAccessLibrary.Services
             => container = await database
                 .CreateContainerIfNotExistsAsync(Config.ContainerName, "/id", 400);
 
-        public static async Task InitCosmosDbAsync()
+        public static async Task<bool> InitCosmosDbAsync()
         {
-            // ConnectionMode.Gateway kringgår ev. brandväggsregler 
-            cosmosClient = new CosmosClient(
-                Config.EndpointUri, Config.PrimaryKey, 
-                new CosmosClientOptions() { ConnectionMode = ConnectionMode.Gateway }
-                );
+            try
+            {
+                // ConnectionMode.Gateway kringgår ev. brandväggsregler 
+                cosmosClient = new CosmosClient(
+                    Config.EndpointUri, Config.PrimaryKey, 
+                    new CosmosClientOptions() { ConnectionMode = ConnectionMode.Gateway }
+                    );
 
-            await CreateDatabaseAsync();
-            await CreateContainerAsync();
+                await CreateDatabaseAsync();
+                await CreateContainerAsync();
+                _dbLoaded = true;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         #endregion
 
-        // Funktion för att vänta på InitCosmosDbAsync
+        // Funktion för att kolla så att cosmos db är laddad
         private static async Task WaitForDb()
         {
-            while (container == null)
+            while (!_dbLoaded)
                 await Task.Delay(1000);
         }
 
@@ -94,22 +103,16 @@ namespace DataAccessLibrary.Services
             return result.Resource;
         }
 
-        public static async Task UpdateTicketStatusAsync(string id, Ticket.TicketStatus status)
+        public static async Task UpdateTicketAsync(Ticket ticket)
         {
-            var result = await container.ReadItemAsync<Ticket>(id, new PartitionKey(id));
+            var result = await container.ReadItemAsync<Ticket>(ticket.Id, new PartitionKey(ticket.Id));
 
             if (result != null)
-            {
-                var ticket = result.Resource;
-                ticket.Status = status;
-
                 await container.ReplaceItemAsync(ticket, ticket.Id, new PartitionKey(ticket.Id));
-            }
         }
 
-        public static async Task UpdateTicketList()
+        public static async Task UpdateTicketListAsync()
         {
-
             ViewModel.OpenTickets.Clear();
             ViewModel.ClosedTickets.Clear();
 
@@ -123,5 +126,8 @@ namespace DataAccessLibrary.Services
                     ViewModel.OpenTickets.Add(ticket);
             }
         }
+
+        public static async Task AddCustomerAsync(Customer customer)
+            => await container.CreateItemAsync(customer);
     }
 }

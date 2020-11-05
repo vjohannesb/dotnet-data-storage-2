@@ -23,7 +23,7 @@
                 <!-- Ticket ID, tidpunkt, kundens id, kategorisering av ärendet, en beskrivning av ärendet, ärendestatus. -->
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="ID: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                        <TextBlock Text="Ticket ID: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
                         <TextBlock Text="{Binding Id}" />
                     </StackPanel>
 
@@ -33,8 +33,8 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Customer: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding Customer.CustomerDisplay}"/>
+                        <TextBlock Text="Customer ID: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                        <TextBlock Text="{Binding CustomerId}"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal">
@@ -51,20 +51,38 @@
                         <TextBlock Text="Status: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
                         <TextBlock Text="{Binding Status}" />
                     </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0, 5">
+                        <TextBlock Text="Attachment: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                        <TextBlock Text="{Binding _attachedFileName}"/>
+                        <Image Source="{Binding _attachedImage}" />
+                    </StackPanel>
                 </StackPanel>
             </StackPanel>
         </DataTemplate>
     </Page.Resources>
 
-    <Grid Margin="20">
+    <Grid Margin="10, 0">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition/>
         </Grid.RowDefinitions>
-
+        
         <TextBlock x:Name="tbListHeader" Text="Open tickets" 
                    Grid.Row="0"
                    FontWeight="Bold" FontSize="36"/>
+
+        <TextBlock x:Name="tbUpdate" Text="Updating ticket list..."
+                   Grid.Row="0" 
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" 
+                   Visibility="Collapsed"/>
+
+        <Button x:Name="btnRefreshDb" Click="btnRefreshDb_Click"
+                Grid.Row="0" 
+                HorizontalAlignment="Right" 
+                VerticalAlignment="Center"
+                Content="Refresh" />
 
         <!-- ItemSource styrs programmatiskt från MainPage -->
         <controls:DataGrid x:Name="dgTicketTable" Grid.Row="1" 
@@ -73,6 +91,7 @@
                            RowDetailsTemplate="{StaticResource RowDetailsTemplate}" >
 
             <controls:DataGrid.Columns>
+
                 <!-- Edit button -->
                 <controls:DataGridTemplateColumn Header="Edit">
                     <controls:DataGridTemplateColumn.CellTemplate>
@@ -106,21 +125,22 @@
                 <controls:DataGridTemplateColumn Header="Description" >
                     <controls:DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding Description}" Padding="5" VerticalAlignment="Center"  TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding Description}" Padding="5" VerticalAlignment="Center"  
+                                       TextWrapping="Wrap"/>
                         </DataTemplate>
                     </controls:DataGridTemplateColumn.CellTemplate>
                 </controls:DataGridTemplateColumn>
-                
+
                 <!-- Status -->
                 <controls:DataGridTemplateColumn Header="Status" >
                     <controls:DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding StatusString}" VerticalAlignment="Center"  Padding="5"/>
+                            <TextBlock Text="{Binding StatusString}" Padding="5" VerticalAlignment="Center" />
                         </DataTemplate>
                     </controls:DataGridTemplateColumn.CellTemplate>
                 </controls:DataGridTemplateColumn>
             </controls:DataGrid.Columns>
-        </controls:DataGrid>
 
+        </controls:DataGrid>
     </Grid>
 </Page>

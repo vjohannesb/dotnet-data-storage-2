@@ -23,6 +23,7 @@ using DataAccessLibrary.Services;
 using DataAccessLibrary.Settings;
 using Windows.Storage.AccessCache;
 using System.Collections.ObjectModel;
+using Windows.Storage.Pickers;
 
 /* Ärendehanteringssystem
  * Meny till vänster
@@ -63,6 +64,8 @@ namespace UwpApp
         DataGrid ticketDataGrid => ticketListViewModel.ticketDataGrid;
         TextBlock ticketListHeader => ticketListViewModel.ticketListHeader;
 
+        private bool _dbConnected = false;
+
         public MainPage()
         {
             InitializeComponent();
@@ -71,29 +74,63 @@ namespace UwpApp
             InitDbAsync().GetAwaiter();
         }
 
-        private static async Task InitDbAsync() 
-            => await DbService.InitCosmosDbAsync();
+        private async Task InitDbAsync()
+        {
+            if (await DbService.InitCosmosDbAsync())
+            {
+                ViewModel.customers = await DbService.GetAllCustomersAsync();
+                await DbService.UpdateTicketListAsync(); 
 
-        private static async Task GetCustomersAsync(List<Customer> customers)
-            => customers = await DbService.GetAllCustomersAsync();
+                tbLoadingCosmos.Visibility = Visibility.Collapsed;
+                tbLoadingBlob.Visibility = Visibility.Visible;
+            }
+            else
+                tbLoadingCosmos.Text = "Could not connect to Cosmos DB!";
+
+            // Kör denna en gång för att skapa customers i CosmosDb
+            // await CreateMockCustomers();
+
+            if (await BlobService.InitStorageAsync())
+            {
+                tbLoadingBlob.Visibility = Visibility.Collapsed;
+                _dbConnected = true;
+            }
+            else
+                tbLoadingBlob.Text = "Could not connect to Azure Blob Storage!";
+
+        }
+
+        private static async Task CreateMockCustomers()
+        {
+            await DbService.AddCustomerAsync(new Customer("Anders", "Andersson"));
+            await DbService.AddCustomerAsync(new Customer("Bertil", "Bertilsson"));
+            await DbService.AddCustomerAsync(new Customer("Carl", "Carlsson"));
+        }
 
         private void btnOpenTickets_Click(object sender, RoutedEventArgs e)
         {
-            ticketListHeader.Text = "Open tickets";
-            ticketDataGrid.ItemsSource = ViewModel.OpenTickets;
-            DataContext = ticketListViewModel;
+            if (_dbConnected)
+            {
+                ticketListHeader.Text = "Open tickets";
+                ticketDataGrid.ItemsSource = ViewModel.OpenTickets;
+                DataContext = ticketListViewModel;
+            }
         }
 
         private void btnClosedTickets_Click(object sender, RoutedEventArgs e)
         {
-            ticketListHeader.Text = "Closed tickets";
-            ticketDataGrid.ItemsSource = ViewModel.ClosedTickets;
-            DataContext = ticketListViewModel;
+            if (_dbConnected)
+            {
+                ticketListHeader.Text = "Closed tickets";
+                ticketDataGrid.ItemsSource = ViewModel.ClosedTickets;
+                DataContext = ticketListViewModel;
+            }
         }
 
         private void btnCreateTicket_Click(object sender, RoutedEventArgs e)
         {
-            DataContext = ticketCreationViewModel;
+            if (_dbConnected)
+                DataContext = ticketCreationViewModel;
         }
     }
 }

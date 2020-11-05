@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace DataAccessLibrary.Settings
 {
-    class Settings
+    public class ClientSettings
     {
+        public static List<string> Statuses { get; private set; }
+
+        public static List<string> Categories { get; private set; }
     }
 }

@@ -13,9 +13,18 @@ namespace DataAccessLibrary.Models
         {
             Id = Guid.NewGuid().ToString();
             Type = "customer";
-            
+
             FirstName = firstName;
             LastName = lastName;
+        }
+
+        [JsonConstructor]
+        public Customer(string id, string firstName, string lastName, string type)
+        {
+            Id = id;
+            FirstName = firstName;
+            LastName = lastName;
+            Type = type;
         }
 
         [JsonProperty(PropertyName = "id")]
@@ -30,9 +39,10 @@ namespace DataAccessLibrary.Models
         [JsonProperty(PropertyName = "type")]
         public string Type { get; }
 
-
+        [JsonIgnore]
         public string FullName => $"{FirstName} {LastName}";
 
+        [JsonIgnore]
         public string CustomerDisplay => $"{FullName} ({Id})";
     }
 }

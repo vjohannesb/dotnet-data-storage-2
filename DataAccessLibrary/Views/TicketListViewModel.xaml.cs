@@ -17,20 +17,31 @@ namespace DataAccessLibrary.Views
 
     public sealed partial class TicketListViewModel : Page
     {
+        private List<Customer> _customers => ViewModel.customers;
+
         public DataGrid ticketDataGrid => dgTicketTable;
         public TextBlock ticketListHeader => tbListHeader;
 
         public TicketListViewModel()
         {
             InitializeComponent();
-
-            DbService.UpdateTicketList().GetAwaiter();
         }
 
         private void btnEditTicket_Click(object sender, RoutedEventArgs e)
         {
             var ticket = ((FrameworkElement)sender).DataContext as Ticket;
             ViewModel.mainPage.DataContext = new TicketEditViewModel(ticket);
+        }
+
+        private async void btnRefreshDb_Click(object sender, RoutedEventArgs e)
+        {
+            btnRefreshDb.IsEnabled = false;
+            tbUpdate.Visibility = Visibility.Visible;
+
+            await DbService.UpdateTicketListAsync();
+
+            tbUpdate.Visibility = Visibility.Collapsed;
+            btnRefreshDb.IsEnabled = true;
         }
     }
 }
