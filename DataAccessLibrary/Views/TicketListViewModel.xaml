@@ -5,7 +5,7 @@
     xmlns:local="using:DataAccessLibrary.Views"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls" xmlns:x1="using:System"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -15,48 +15,67 @@
             <StackPanel Padding="20">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Details for ticket #" FontWeight="Bold" FontSize="18"/>
-                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="18"/>
+                    <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="18" IsTextSelectionEnabled="True"/>
                     <Rectangle Width="1000" Height="2"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Created: " Padding="0, 0, 5, 0" FontWeight="Bold" Foreground="Gray"/>
+                    <TextBlock Text="{Binding Created}" Foreground="Gray"/>
                 </StackPanel>
                 <Border BorderBrush="DimGray"  BorderThickness="1" HorizontalAlignment="Left" Width="100"/>
 
                 <!-- Ticket ID, tidpunkt, kundens id, kategorisering av ärendet, en beskrivning av ärendet, ärendestatus. -->
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Ticket ID: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding Id}" />
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Created: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding Created}" />
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Customer ID: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding CustomerId}"/>
+                        <TextBlock Text="Customer: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
+                        <TextBlock Text="{Binding TicketCustomer.CustomerDisplay}" IsTextSelectionEnabled="True"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Category: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding Category}" />
+                        <TextBlock Text="{Binding Category}" IsTextSelectionEnabled="True" />
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Description: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding Description}" />
+                        <TextBlock Text="{Binding Description}" IsTextSelectionEnabled="True" />
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Status: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding Status}" />
+                        <TextBlock Text="{Binding Status}" IsTextSelectionEnabled="True" />
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0, 5">
-                        <TextBlock Text="Attachment: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding _attachedFileName}"/>
-                        <Image Source="{Binding _attachedImage}" />
+                    <TextBlock Text="Comments: " FontWeight="Bold"/>
+                    <ListView ItemsSource="{Binding Comments}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Created}" Foreground="Gray" Padding="0, 0, 5, 0"/>
+                                    <TextBlock Text="{Binding Content}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <StackPanel Visibility="{Binding HasAttachment}" HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Attachment: " FontWeight="Bold" Padding="0, 0, 5, 0"
+                                       VerticalAlignment="Center"/>
+                            <HyperlinkButton x:Name="btnShowImage" Click="btnShowImage_Click">
+                                <TextBlock Text="{Binding AttachmentFileName}" />
+                            </HyperlinkButton>
+
+                            <TextBlock Text="{Binding ShowAttachment}"/>
+
+                            <Image Stretch="UniformToFill"
+                                   Visibility="{Binding ShowAttachment}"
+                                   Source="{Binding AttachmentPath}"/>
+                        </StackPanel>
+                        
                     </StackPanel>
+                    
                 </StackPanel>
             </StackPanel>
         </DataTemplate>

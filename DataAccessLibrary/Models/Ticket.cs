@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using DataAccessLibrary.Services;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Threading.Tasks;
 using Windows.Storage;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media.Imaging;
 
 namespace DataAccessLibrary.Models
@@ -60,6 +63,8 @@ namespace DataAccessLibrary.Models
         [JsonProperty(PropertyName = "status")]
         public TicketStatus Status { get; set; }
 
+        // Hämta Customer när CustomerId sätts istället
+        // för att lagra en hel Customer i CosmosDB
         [JsonProperty(PropertyName = "customerId")]
         public string CustomerId 
         {
@@ -71,25 +76,26 @@ namespace DataAccessLibrary.Models
             } 
         }
 
+        // För att bara behöva lagra en variabel i Cosmos DB
+        // som indikation på om ärendet har en attachment eller inte
+        // och samtidigt kunna använda Cosmos' JsonSerializer
         [JsonProperty(PropertyName = "attachmentExtension")]
-        public string? AttachmentExtension
+        public string AttachmentExtension
         {
-            get
-            {
-                return _attachmentExtension;
-            }
-
+            get { return _attachmentExtension; }
             set
             {
                 _attachmentExtension = value;
-                try
+                if (_attachmentExtension != null)
                 {
-                    _attachedImage = new BitmapImage(new Uri($"{ApplicationData.Current.LocalFolder}\\{Id}{_attachmentExtension}"));
-                    await ApplicationData.Current.LocalFolder.GetFileAsync($"{Id}{AttachmentExtension}")
+                    DownloadAttachmentIfNotExist().GetAwaiter();
+                    AttachmentPath = "ms-appdata:///local/" + AttachmentFileName;
+                    HasAttachment = true;
                 }
-                catch
+                else
                 {
-                    _attachedImage = null;
+                    AttachmentPath = string.Empty;
+                    HasAttachment = false;
                 }
             }
         }
@@ -100,24 +106,39 @@ namespace DataAccessLibrary.Models
         [JsonProperty(PropertyName = "comments")]
         public ObservableCollection<Comment> Comments { get; set; }
 
+        // -- JsonIgnores --
 
+        [JsonIgnore]
+        public string AttachmentFileName => Id + AttachmentExtension;
+
+        // Visibility i detaljvy + om fil ska laddas upp/ner eller ej
+        [JsonIgnore]
+        public bool HasAttachment { get; set; } = false;
+
+        // Lokal path till bifogad fil, sätts initiellt av SetAttachmentExtension
+        [JsonIgnore]
+        public string AttachmentPath { get; set; }
+
+        // För att visa status i XAML
         [JsonIgnore]
         public string StatusString => Status.ToString();
 
+        // För att lagra Customer lokalt istället för på Cosmos DB
         [JsonIgnore]
         public Customer TicketCustomer { get; private set; }
 
+        [JsonIgnore]
+        public bool ShowAttachment { get; set; } = false;
+
+        // -- Fields --
         [JsonIgnore]
         private string _customerId;
 
         [JsonIgnore]
         private string _attachmentExtension;
 
-        [JsonIgnore]
-        public string _attachedFileName => $"{Id}{AttachmentExtension}";
-
-        [JsonIgnore]
-        public BitmapImage _attachedImage { get; private set; }
-
+        // -- Methods --
+        private async Task DownloadAttachmentIfNotExist()
+            => await BlobService.DownloadFileIfNotExistAsync(AttachmentFileName);
     }
 }

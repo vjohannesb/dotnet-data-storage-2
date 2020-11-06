@@ -97,7 +97,6 @@ namespace UwpApp
             }
             else
                 tbLoadingBlob.Text = "Could not connect to Azure Blob Storage!";
-
         }
 
         private static async Task CreateMockCustomers()

@@ -31,7 +31,6 @@ namespace DataAccessLibrary.Views
 
         private Ticket _ticket = new Ticket();
         private StorageFile _file;
-        private bool _fileAttached = false;
 
         private readonly SolidColorBrush redBrush = new SolidColorBrush(Colors.Red);
         private readonly SolidColorBrush resetBrush = new SolidColorBrush(Colors.Black);
@@ -99,12 +98,12 @@ namespace DataAccessLibrary.Views
             _ticket.CustomerId = cbxCustomer.SelectedValue.ToString();
             _ticket.Description = tbxDescription.Text;
 
-            await DbService.AddTicketAsync(_ticket);
-            if (_fileAttached)
+            if (_ticket.HasAttachment)
             {
                 await BlobService.StoreFileAsync(_file, _ticket.Id);
                 _ticket.AttachmentExtension = _file.FileType;
             }
+            await DbService.AddTicketAsync(_ticket);
 
             ResetData();
 
@@ -120,7 +119,7 @@ namespace DataAccessLibrary.Views
 
         private async void btnAttach_Click(object sender, RoutedEventArgs e)
         {
-            if (!_fileAttached)
+            if (!_ticket.HasAttachment)
             {
                 FileOpenPicker picker = new FileOpenPicker();
                 picker.FileTypeFilter.Add(".jpg");
@@ -128,15 +127,17 @@ namespace DataAccessLibrary.Views
                 picker.FileTypeFilter.Add(".png");
                 picker.FileTypeFilter.Add(".gif");
                 picker.FileTypeFilter.Add(".bmp");
+                picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+                picker.ViewMode = PickerViewMode.Thumbnail;
 
                 _file = await picker.PickSingleFileAsync();
 
                 if (_file != null)
                 {
-                    tbAttachment.Text = _file.Name;
                     btnAttach.Content = "Remove attachment";
+                    tbAttachment.Text = _file.Name;
 
-                    _fileAttached = true;
+                    _ticket.HasAttachment = true;
                 }
             }
             else
@@ -144,7 +145,8 @@ namespace DataAccessLibrary.Views
                 btnAttach.Content = "Add attachment";
                 tbAttachment.Text = string.Empty;
 
-                _fileAttached = false;
+                _ticket.AttachmentExtension = null;
+                _ticket.HasAttachment = false;
             }
         }
     }

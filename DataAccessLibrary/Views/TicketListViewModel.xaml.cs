@@ -1,16 +1,10 @@
 ﻿using DataAccessLibrary.Models;
 using DataAccessLibrary.Services;
 using Microsoft.Toolkit.Uwp.UI.Controls;
-using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=234238
+using Windows.UI.Xaml.Controls.Primitives;
 
 namespace DataAccessLibrary.Views
 {
@@ -21,6 +15,8 @@ namespace DataAccessLibrary.Views
 
         public DataGrid ticketDataGrid => dgTicketTable;
         public TextBlock ticketListHeader => tbListHeader;
+
+        public bool ShowAttachment { get; private set; } = false;
 
         public TicketListViewModel()
         {
@@ -42,6 +38,14 @@ namespace DataAccessLibrary.Views
 
             tbUpdate.Visibility = Visibility.Collapsed;
             btnRefreshDb.IsEnabled = true;
+        }
+
+        private void btnShowImage_Click(object sender, RoutedEventArgs e)
+        {
+            var ticket = ((FrameworkElement)sender).DataContext as Ticket;
+            ticket.ShowAttachment = true;
+            ((FrameworkElement))
+            //FlyoutBase.ShowAttachedFlyout((FrameworkElement)sender);
         }
     }
 }

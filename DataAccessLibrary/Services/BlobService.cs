@@ -2,6 +2,7 @@
 using Azure.Storage.Blobs.Models;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -66,18 +67,64 @@ namespace DataAccessLibrary.Services
             _blobClient = _containerClient.GetBlobClient(file.Name);
 
             using FileStream fileStream = File.OpenRead(file.Path);
-            await _blobClient.UploadAsync(fileStream);
+            await _blobClient.UploadAsync(fileStream, true);
             fileStream.Close();
         }
 
-        public static async Task DownloadFileAsync(string fileName)
+        /// <summary>
+        /// Deletes the file from Azure Blob Storage (using DeleteIfExistsAsync) and locally if found.
+        /// </summary>
+        public static async Task DeleteFileIfExistAsync(string fileName)
         {
-            _blobClient = _containerClient.GetBlobClient(fileName);
-            BlobDownloadInfo download = await _blobClient.DownloadAsync();
+            try
+            {
+                _blobClient = _containerClient.GetBlobClient(fileName);
+                await _blobClient.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots);
+            }
+            catch
+            {
+                Debug.WriteLine($"{fileName} could not be found in Azure Blob Storage ({_containerClient.Uri})");
+            }
 
-            using FileStream fileStream = File.OpenWrite($"{_localAppData.Path}\\{fileName}");
-            await download.Content.CopyToAsync(fileStream);
-            fileStream.Close();
+            try
+            {
+                var _file = await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
+                await _file.DeleteAsync();
+            }
+            catch
+            {
+                Debug.WriteLine($"{fileName} could not be found in {ApplicationData.Current.LocalFolder.Path}");
+            }
+        }
+        /// <summary>
+        /// Checks local application folder for attachment file, and downloads it from Azure Blob Storage if not found.
+        /// </summary>
+        public static async Task DownloadFileIfNotExistAsync(string fileName)
+        {
+            try
+            {
+                var _file = await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
+            }
+            catch
+            {
+                try
+                {
+                    Debug.WriteLine($"{fileName} could not be not found in {ApplicationData.Current.LocalFolder} "
+                                   + "- downloading from Azure Blob Storage.");
+
+                    _blobClient = _containerClient.GetBlobClient(fileName);
+                    BlobDownloadInfo download = await _blobClient.DownloadAsync();
+
+                    using FileStream fileStream = File.OpenWrite($"{_localAppData.Path}\\{fileName}");
+                    await download.Content.CopyToAsync(fileStream);
+                    fileStream.Close();
+                }
+                catch
+                {
+                    Debug.WriteLine($"Could not download {fileName} from {_containerClient.Uri}");
+                }
+
+            }
         }
 
     }

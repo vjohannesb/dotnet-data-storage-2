@@ -105,6 +105,18 @@
             </ListView.ItemTemplate>
         </ListView>
 
+        <!-- Attachment -->
+        <StackPanel Orientation="Horizontal" 
+                    Grid.Row="5" Grid.Column="0" 
+                    Grid.ColumnSpan="2"
+                    VerticalAlignment="Bottom" Margin="10">
+            <Button x:Name="btnAttach" Content="Attach file" Click="btnAttach_Click"
+                    Padding="20, 8" Margin="5, 0"/>
+
+            <TextBlock x:Name="tbAttachment" VerticalAlignment="Center"
+                       Margin="5, 0" Foreground="#FF555555"/>
+        </StackPanel>
+
         <!-- Cancel & Save Buttons -->
         <StackPanel Orientation="Horizontal" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
                     HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
