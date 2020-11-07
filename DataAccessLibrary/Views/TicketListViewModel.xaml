@@ -12,7 +12,7 @@
 
     <Page.Resources>
         <DataTemplate x:Key="RowDetailsTemplate">
-            <StackPanel Padding="20">
+            <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Details for ticket #" FontWeight="Bold" FontSize="18"/>
                     <TextBlock Text="{Binding Id}" FontWeight="Bold" FontSize="18" IsTextSelectionEnabled="True"/>
@@ -63,17 +63,18 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Attachment: " FontWeight="Bold" Padding="0, 0, 5, 0"
                                        VerticalAlignment="Center"/>
-                            <HyperlinkButton x:Name="btnShowImage" Click="btnShowImage_Click">
-                                <TextBlock Text="{Binding AttachmentFileName}" />
-                            </HyperlinkButton>
-
-                            <TextBlock Text="{Binding ShowAttachment}"/>
-
-                            <Image Stretch="UniformToFill"
-                                   Visibility="{Binding ShowAttachment}"
-                                   Source="{Binding AttachmentPath}"/>
+                            <HyperlinkButton x:Name="btnShowImage" Click="btnShowImage_Click"
+                                             Content="{Binding AttachmentFileName}" 
+                                             Tag="{Binding ElementName=imgAttachment}"/>
                         </StackPanel>
                         
+                        <!-- Stretcha bara nedåt ifall stretch behövs -->
+                        <Viewbox StretchDirection="DownOnly">
+                            <Image x:Name="imgAttachment" 
+                                   Visibility="Collapsed"
+                                   Stretch="None"
+                                   Source="{Binding AttachmentPath}" />
+                        </Viewbox>
                     </StackPanel>
                     
                 </StackPanel>
@@ -105,9 +106,10 @@
 
         <!-- ItemSource styrs programmatiskt från MainPage -->
         <controls:DataGrid x:Name="dgTicketTable" Grid.Row="1" 
-                           HorizontalAlignment="Stretch" VerticalAlignment="Stretch" 
+                           HorizontalAlignment="Stretch"
                            AutoGenerateColumns="False" Width="auto"
-                           RowDetailsTemplate="{StaticResource RowDetailsTemplate}" >
+                           AreRowDetailsFrozen="False"
+                           RowDetailsTemplate="{StaticResource RowDetailsTemplate}">
 
             <controls:DataGrid.Columns>
 

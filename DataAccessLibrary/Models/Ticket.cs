@@ -127,9 +127,6 @@ namespace DataAccessLibrary.Models
         [JsonIgnore]
         public Customer TicketCustomer { get; private set; }
 
-        [JsonIgnore]
-        public bool ShowAttachment { get; set; } = false;
-
         // -- Fields --
         [JsonIgnore]
         private string _customerId;

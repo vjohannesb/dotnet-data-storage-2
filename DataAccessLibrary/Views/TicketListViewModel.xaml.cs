@@ -2,6 +2,7 @@
 using DataAccessLibrary.Services;
 using Microsoft.Toolkit.Uwp.UI.Controls;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -15,8 +16,6 @@ namespace DataAccessLibrary.Views
 
         public DataGrid ticketDataGrid => dgTicketTable;
         public TextBlock ticketListHeader => tbListHeader;
-
-        public bool ShowAttachment { get; private set; } = false;
 
         public TicketListViewModel()
         {
@@ -42,9 +41,21 @@ namespace DataAccessLibrary.Views
 
         private void btnShowImage_Click(object sender, RoutedEventArgs e)
         {
-            var ticket = ((FrameworkElement)sender).DataContext as Ticket;
-            ticket.ShowAttachment = true;
-            ((FrameworkElement))
+            var _dataGrid = FindName("dgTicketTable") as DataGrid;
+            var _template = _dataGrid.RowDetailsTemplate;
+
+            var _image = (((FrameworkElement)sender).Tag) as Image;
+            if (_image.Visibility == Visibility.Collapsed)
+                _image.Visibility = Visibility.Visible;
+            else
+            {
+                _image.Visibility = Visibility.Collapsed;
+
+                // Halvdan kod men uppdaterar rowdetails' utrymme genom att återställa template
+                _dataGrid.RowDetailsTemplate = null;
+                _dataGrid.RowDetailsTemplate = _template;
+            }
+
             //FlyoutBase.ShowAttachedFlyout((FrameworkElement)sender);
         }
     }
