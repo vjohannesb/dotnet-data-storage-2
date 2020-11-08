@@ -40,9 +40,9 @@ namespace DataAccessLibrary.Models
         public string Type { get; }
 
         [JsonIgnore]
-        public string FullName => $"{FirstName} {LastName}";
+        public string DisplayName => $"{FirstName} {LastName}";
 
         [JsonIgnore]
-        public string CustomerDisplay => $"{FullName} ({Id})";
+        public string CustomerDisplay => $"{DisplayName} ({Id})";
     }
 }

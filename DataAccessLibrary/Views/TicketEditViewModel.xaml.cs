@@ -1,11 +1,16 @@
-﻿using DataAccessLibrary.Models;
+﻿using Azure;
+using DataAccessLibrary.Models;
 using DataAccessLibrary.Services;
 using DataAccessLibrary.Settings;
+using Microsoft.Azure.Cosmos;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
@@ -27,12 +32,19 @@ namespace DataAccessLibrary.Views
     /// </summary>
     public sealed partial class TicketEditViewModel : Page
     {
-        private List<Customer> _customers => ViewModel.customers;
-        private List<string> Categories => ViewModel.ticketCategories;
+        private List<Customer> Customers => ViewModel.Customers;
+        private List<string> Categories => ViewModel.ClientSettings.Categories;
 
         private Ticket _ticket;
-        private Customer _ticketCustomer;
         private StorageFile _file;
+
+        private bool _attachmentUpdated = false;
+
+        private static ContentDialog errorDialog = new ContentDialog()
+        {
+            Title = "An error occured while updating the ticket",
+            CloseButtonText = "Ok"
+        };
 
         public TicketEditViewModel(Ticket ticket)
         {
@@ -44,11 +56,8 @@ namespace DataAccessLibrary.Views
 
         public void SetUpEdit()
         {
-            _ticketCustomer = _customers.First(c => c.Id == _ticket.CustomerId);
-
-            cbxCategory.SelectedItem = _ticket.Category;
+            // Sätter programmatiskt för enklare konvertering från enum till int
             cbxStatus.SelectedIndex = (int)_ticket.Status;
-            cbxCustomer.SelectedItem = _ticketCustomer;
 
             if (_ticket.HasAttachment)
             {
@@ -85,69 +94,128 @@ namespace DataAccessLibrary.Views
             _ticket.Status = (Ticket.TicketStatus)cbxStatus.SelectedIndex;
             _ticket.CustomerId = cbxCustomer.SelectedValue.ToString();
 
-            if (_ticket.HasAttachment)
+            try
             {
-                await BlobService.StoreFileAsync(_file, _ticket.Id);
-                _ticket.AttachmentExtension = _file.FileType;
+                if (_attachmentUpdated)
+                {
+                    if (_ticket.HasAttachment)
+                    {
+                        _ticket.AttachmentExtension = _file.FileType;
+                        await BlobService.StoreFileAsync(_file, _ticket.Id);
+                    }
+                    else
+                    {
+                        await BlobService.DeleteFileIfExists(_ticket.AttachmentFileName);
+                        _ticket.AttachmentExtension = null;
+                    }
+                }
+
+                await DbService.UpdateTicketAsync(_ticket);
+
             }
-            else
+            catch (FileLoadException flEx)
             {
-                await BlobService.DeleteFileIfExistAsync(_ticket.Id);
-                _ticket.AttachmentExtension = null;
+                Debug.WriteLine($"File could not be loaded. {flEx}");
+                tbAttachment.Text = "File access error. Try again or try another file.";
+
+                errorDialog.Content = flEx.Message;
+                await errorDialog.ShowAsync();
+            }
+            catch (UnauthorizedAccessException uaEx)
+            {
+                Debug.WriteLine($"File could not be loaded. {uaEx}");
+                tbAttachment.Text = "File access error. Try again or try another file.";
+
+                errorDialog.Content = uaEx.Message;
+                await errorDialog.ShowAsync();
+            }
+            catch (RequestFailedException rEx)
+            {
+                Debug.WriteLine($"Request failed - {rEx}");
+
+                errorDialog.Content = rEx.Message;
+                await errorDialog.ShowAsync();
+            }
+            catch (CosmosException cEx)
+            {
+                Debug.WriteLine($"Ticket could not be updated. {cEx}");
+
+                errorDialog.Content = cEx.Message;
+                await errorDialog.ShowAsync();
             }
 
-            await DbService.UpdateTicketAsync(_ticket);
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ticket could not be updated. {ex}");
+
+                errorDialog.Content = ex.Message;
+                await errorDialog.ShowAsync();
+            }
 
             EnableButtons();
-        }
-
-        private void btnCancelEdit_Click(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void DisableButtons()
         {
             btnSaveEdit.IsEnabled = false;
-            btnCancelEdit.IsEnabled = false;
+            btnAttach.IsEnabled = false;
         }
 
         private void EnableButtons()
         {
             btnSaveEdit.IsEnabled = true;
-            btnCancelEdit.IsEnabled = true;
+            btnAttach.IsEnabled = true;
         }
 
         private async void btnAttach_Click(object sender, RoutedEventArgs e)
         {
+            _attachmentUpdated = true;
+
+            DisableButtons();
+
             if (!_ticket.HasAttachment)
-            {
-                FileOpenPicker picker = new FileOpenPicker();
-                picker.FileTypeFilter.Add(".jpg");
-                picker.FileTypeFilter.Add(".jpeg");
-                picker.FileTypeFilter.Add(".png");
-                picker.FileTypeFilter.Add(".gif");
-                picker.FileTypeFilter.Add(".bmp");
-                picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
-                picker.ViewMode = PickerViewMode.Thumbnail;
-
-                _file = await picker.PickSingleFileAsync();
-
-                if (_file != null)
-                {
-                    btnAttach.Content = "Remove attachment";
-                    tbAttachment.Text = _file.Name;
-
-                    _ticket.HasAttachment = true;
-                }
-            }
+                await AddAttachment();
             else
-            {
-                btnAttach.Content = "Add attachment";
-                tbAttachment.Text = string.Empty;
+                AttachmentRemoved();
 
-                _ticket.HasAttachment = false;
+            EnableButtons();
+        }
+
+        private async Task AddAttachment()
+        {
+            FileOpenPicker picker = new FileOpenPicker()
+            {
+                FileTypeFilter = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" },
+                SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+                ViewMode = PickerViewMode.Thumbnail
+            };
+
+            _file = await picker.PickSingleFileAsync();
+
+            if (_file != null)
+            {
+                var properties = await _file.GetBasicPropertiesAsync();
+                if (properties.Size > 4 * 1024 * 1024)
+                    tbAttachment.Text = "File size exceeds limit (4MB).";
+                else
+                    AttachmentAdded();
             }
+        }
+
+        private void AttachmentAdded()
+        {
+            btnAttach.Content = "Remove attachment";
+            tbAttachment.Text = _file.Name;
+
+            _ticket.HasAttachment = true;
+        }
+
+        private void AttachmentRemoved()
+        {
+            btnAttach.Content = "Add attachment";
+            tbAttachment.Text = string.Empty;
+
+            _ticket.HasAttachment = false;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using DataAccessLibrary.Settings;
+﻿using Azure.Storage.Blobs.Models;
+using DataAccessLibrary.Settings;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Windows.UI.Xaml.Controls;
@@ -7,14 +8,16 @@ namespace DataAccessLibrary.Models
 {
     public class ViewModel
     {
-        public static ObservableCollection<Ticket> OpenTickets = new ObservableCollection<Ticket>();
-        public static ObservableCollection<Ticket> ClosedTickets = new ObservableCollection<Ticket>();
+        public static ObservableCollection<Ticket> OpenTickets { get; set; } = new ObservableCollection<Ticket>();
+        public static ObservableCollection<Ticket> ClosedTickets { get; set; } = new ObservableCollection<Ticket>();
 
-        public static List<string> ticketCategories = new List<string>() { "Error T1", "Error T2", "Error T3" };
+        public static List<Customer> Customers { get; set; } = new List<Customer>();
 
-        // Använder list då denna apps "customers" inte kommer förändras
-        public static List<Customer> customers = new List<Customer>();
+        public static ClientSettings ClientSettings { get; set; } = new ClientSettings();
+
+        public static ObservableCollection<Ticket> previousView { get; set; }
 
         public static Page mainPage;
+
     }
 }

@@ -11,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Storage;
+using Windows.UI.Xaml.Automation.Peers;
 using Windows.UI.Xaml.Controls;
 
 namespace DataAccessLibrary.Services
@@ -22,8 +23,6 @@ namespace DataAccessLibrary.Services
         private static Container container;
 
         private static bool _dbLoaded = false;
-
-        #region Initialize Cosmos Database + Container
 
         private static async Task CreateDatabaseAsync()
             => database = await cosmosClient
@@ -54,8 +53,6 @@ namespace DataAccessLibrary.Services
             }
         }
 
-        #endregion
-
         // Funktion för att kolla så att cosmos db är laddad
         private static async Task WaitForDb()
         {
@@ -81,13 +78,19 @@ namespace DataAccessLibrary.Services
         public static async Task AddTicketAsync(Ticket ticket) 
             => await container.CreateItemAsync(ticket);
 
-        public static async Task<List<Ticket>> GetAllTicketsAsync()
+        public static async Task<List<Ticket>> GetClosedTicketsAsync()
         {
             await WaitForDb();
 
+            var take = ViewModel.ClientSettings.ClosedTicketTake;
             var tickets = new List<Ticket>();
 
-            var query = new QueryDefinition("SELECT * FROM items WHERE items.type = \"ticket\" ");
+            var query = new QueryDefinition("SELECT * FROM items" 
+                                            + " WHERE items.type = \"ticket\"" 
+                                            + " AND items.status = 2" 
+                                            + " ORDER BY items.created DESC" 
+                                            + " OFFSET 0 LIMIT " + take.ToString());
+
             FeedIterator<Ticket> result = container.GetItemQueryIterator<Ticket>(query);
 
             while (result.HasMoreResults)
@@ -97,34 +100,57 @@ namespace DataAccessLibrary.Services
             return tickets;
         }
 
-        public static async Task<Ticket> GetTicketAsync(string id)
+        public static async Task<List<Ticket>> GetOpenTicketsAsync()
         {
-            var result = await container.ReadItemAsync<Ticket>(id, new PartitionKey(id));
-            return result.Resource;
+            await WaitForDb();
+
+            var tickets = new List<Ticket>();
+
+            var query = new QueryDefinition("SELECT * FROM items"
+                                            + " WHERE items.type = \"ticket\""
+                                            + " AND items.status != 2"
+                                            + " ORDER BY items.created DESC");
+
+            FeedIterator<Ticket> result = container.GetItemQueryIterator<Ticket>(query);
+
+            while (result.HasMoreResults)
+                foreach (var ticket in await result.ReadNextAsync())
+                    tickets.Add(ticket);
+
+            return tickets;
         }
 
         public static async Task UpdateTicketAsync(Ticket ticket)
         {
-            var result = await container.ReadItemAsync<Ticket>(ticket.Id, new PartitionKey(ticket.Id));
-
-            if (result != null)
+            try
+            {
                 await container.ReplaceItemAsync(ticket, ticket.Id, new PartitionKey(ticket.Id));
+            }
+            catch { Debug.WriteLine($"Ticket {ticket.Id} could not be found in Cosmos Db."); }
         }
 
         public static async Task UpdateTicketListAsync()
         {
-            ViewModel.OpenTickets.Clear();
+            await UpdateClosedTicketsAsync();
+            await UpdateOpenTicketsAsync();
+        }
+
+        public static async Task UpdateClosedTicketsAsync()
+        {
             ViewModel.ClosedTickets.Clear();
 
-            var tickets = await GetAllTicketsAsync();
-
+            var tickets = await GetClosedTicketsAsync();
             foreach (var ticket in tickets)
-            {
-                if (ticket.StatusString == "Closed")
-                    ViewModel.ClosedTickets.Add(ticket);
-                else
-                    ViewModel.OpenTickets.Add(ticket);
-            }
+                ViewModel.ClosedTickets.Add(ticket);
+        }
+
+        public static async Task UpdateOpenTicketsAsync()
+        {
+            ViewModel.OpenTickets.Clear();
+
+            var tickets = await GetOpenTicketsAsync();
+            foreach (var ticket in tickets)
+                ViewModel.OpenTickets.Add(ticket);
         }
 
         public static async Task AddCustomerAsync(Customer customer)

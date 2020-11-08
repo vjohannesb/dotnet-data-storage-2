@@ -1,10 +1,13 @@
-﻿using DataAccessLibrary.Models;
+﻿using Azure;
+using DataAccessLibrary.Models;
 using DataAccessLibrary.Services;
 using DataAccessLibrary.Settings;
 using DataAccessLibrary.Views;
+using Microsoft.Azure.Cosmos;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -26,8 +29,8 @@ namespace DataAccessLibrary.Views
 {
     public sealed partial class TicketCreationViewModel : Page
     {
-        private List<Customer> Customers => ViewModel.customers;
-        private List<string> Categories => ViewModel.ticketCategories;
+        private List<Customer> Customers => ViewModel.Customers;
+        private List<string> Categories => ViewModel.ClientSettings.Categories;
 
         private Ticket _ticket = new Ticket();
         private StorageFile _file;
@@ -35,6 +38,13 @@ namespace DataAccessLibrary.Views
         private readonly SolidColorBrush redBrush = new SolidColorBrush(Colors.Red);
         private readonly SolidColorBrush resetBrush = new SolidColorBrush(Colors.Black);
         private readonly List<ComboBox> comboBoxes;
+
+        private static ContentDialog errorDialog = new ContentDialog()
+        {
+            Title = "An error occured while updating the ticket",
+            CloseButtonText = "Ok"
+        };
+        
 
         public TicketCreationViewModel()
         {
@@ -46,7 +56,7 @@ namespace DataAccessLibrary.Views
             comboBoxes = new List<ComboBox>() { cbxCategory, cbxStatus, cbxCustomer };
         }
 
-        private void ResetData()
+        private void ResetInput()
         {
             _ticket = new Ticket();
             lvComments.ItemsSource = _ticket.Comments;
@@ -59,6 +69,20 @@ namespace DataAccessLibrary.Views
                 cbx.SelectedIndex = -1;
                 cbx.BorderBrush = resetBrush;
             }
+
+            AttachmentRemoved();
+        }
+
+        private void DisableButtons()
+        {
+            btnSave.IsEnabled = false;
+            btnCancel.IsEnabled = false;
+        }
+
+        private void EnableButtons()
+        {
+            btnSave.IsEnabled = true;
+            btnCancel.IsEnabled = true;
         }
 
         private void btnAddComment_Click(object sender, RoutedEventArgs e)
@@ -74,7 +98,7 @@ namespace DataAccessLibrary.Views
 
         private async void btnSave_Click(object sender, RoutedEventArgs e)
         {
-            // Kontrollera värden och fokusera på "första felaktiga"
+            // Kontrollera värden och "fokusera" på "första felaktiga"
             if (cbxCategory.SelectedIndex == -1)
                 cbxCategory.BorderBrush = redBrush;
             else if (cbxStatus.SelectedIndex == -1)
@@ -90,29 +114,69 @@ namespace DataAccessLibrary.Views
 
         private async Task SaveTicketToDb()
         {
-            btnSave.IsEnabled = false;
-            btnCancel.IsEnabled = false;
+            DisableButtons();
 
             _ticket.Category = cbxCategory.SelectedItem.ToString();
             _ticket.Status = (Ticket.TicketStatus)cbxStatus.SelectedIndex;
             _ticket.CustomerId = cbxCustomer.SelectedValue.ToString();
             _ticket.Description = tbxDescription.Text;
 
-            if (_ticket.HasAttachment)
+            try
             {
-                await BlobService.StoreFileAsync(_file, _ticket.Id);
-                _ticket.AttachmentExtension = _file.FileType;
+                if (_ticket.HasAttachment)
+                {
+                    await BlobService.StoreFileAsync(_file, _ticket.Id);
+                    _ticket.AttachmentExtension = _file.FileType;
+                }
+
+                await DbService.AddTicketAsync(_ticket);
             }
-            await DbService.AddTicketAsync(_ticket);
+            catch (FileLoadException flEx)
+            {
+                Debug.WriteLine($"File could not be loaded. {flEx}");
+                tbAttachment.Text = "File access error. Try again or try another file.";
 
-            ResetData();
+                errorDialog.Content = flEx.Message;
+                await errorDialog.ShowAsync();
+            }
+            catch (UnauthorizedAccessException uaEx)
+            {
+                Debug.WriteLine($"File could not be loaded. {uaEx}");
+                tbAttachment.Text = "File access error. Try again or try another file.";
 
-            btnSave.IsEnabled = true;
-            btnCancel.IsEnabled = true;
+                errorDialog.Content = uaEx.Message;
+                await errorDialog.ShowAsync();
+            }
+            catch (RequestFailedException rEx)
+            {
+                Debug.WriteLine($"Request failed - {rEx}");
+
+                errorDialog.Content = rEx.Message;
+                await errorDialog.ShowAsync();
+            }
+            catch (CosmosException cEx)
+            {
+                Debug.WriteLine($"Ticket could not be updated. {cEx}");
+
+                errorDialog.Content = cEx.Message;
+                await errorDialog.ShowAsync();
+            }
+
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ticket could not be updated. {ex}");
+
+                errorDialog.Content = ex.Message;
+                await errorDialog.ShowAsync();
+            }
+
+            ResetInput();
+
+            EnableButtons();
         }
 
         private void btnCancel_Click(object sender, RoutedEventArgs e)
-            => ResetData();
+            => ResetInput();
 
         private void cbx_GotFocus(object sender, RoutedEventArgs e)
             => ((ComboBox)sender).BorderBrush = resetBrush;
@@ -120,34 +184,49 @@ namespace DataAccessLibrary.Views
         private async void btnAttach_Click(object sender, RoutedEventArgs e)
         {
             if (!_ticket.HasAttachment)
-            {
-                FileOpenPicker picker = new FileOpenPicker();
-                picker.FileTypeFilter.Add(".jpg");
-                picker.FileTypeFilter.Add(".jpeg");
-                picker.FileTypeFilter.Add(".png");
-                picker.FileTypeFilter.Add(".gif");
-                picker.FileTypeFilter.Add(".bmp");
-                picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
-                picker.ViewMode = PickerViewMode.Thumbnail;
-
-                _file = await picker.PickSingleFileAsync();
-
-                if (_file != null)
-                {
-                    btnAttach.Content = "Remove attachment";
-                    tbAttachment.Text = _file.Name;
-
-                    _ticket.HasAttachment = true;
-                }
-            }
+                await AddAttachment();
             else
-            {
-                btnAttach.Content = "Add attachment";
-                tbAttachment.Text = string.Empty;
+                AttachmentRemoved();
+        }
 
-                _ticket.AttachmentExtension = null;
-                _ticket.HasAttachment = false;
+        private async Task AddAttachment()
+        {
+            FileOpenPicker picker = new FileOpenPicker()
+            {
+                FileTypeFilter = { ".jpg", ".jpeg", ".png", ".gif", ".bmp" },
+                SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+                ViewMode = PickerViewMode.Thumbnail
+            };
+
+            _file = await picker.PickSingleFileAsync();
+
+            if (_file != null)
+            {
+                var properties = await _file.GetBasicPropertiesAsync();
+                if (properties.Size > 4 * 1024 * 1024)
+                    tbAttachment.Text = "File size exceeds limit (4MB).";
+                else
+                    AttachmentAdded();
             }
         }
+
+        private void AttachmentAdded()
+        {
+            btnAttach.Content = "Remove attachment";
+            tbAttachment.Text = _file.Name;
+
+            _ticket.HasAttachment = true;
+        }
+
+        private void AttachmentRemoved()
+        {
+            btnAttach.Content = "Add attachment";
+            tbAttachment.Text = string.Empty;
+
+            _ticket.HasAttachment = false;
+        }
+
+        private void btnRemoveComment_Click(object sender, RoutedEventArgs e)
+            => _ticket.Comments.Remove(((FrameworkElement)sender).DataContext as Comment);
     }
 }

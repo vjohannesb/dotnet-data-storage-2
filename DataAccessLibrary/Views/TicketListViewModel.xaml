@@ -11,6 +11,7 @@
 
 
     <Page.Resources>
+        <!-- Row Details Template -->
         <DataTemplate x:Key="RowDetailsTemplate">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
@@ -25,7 +26,6 @@
                 </StackPanel>
                 <Border BorderBrush="DimGray"  BorderThickness="1" HorizontalAlignment="Left" Width="100"/>
 
-                <!-- Ticket ID, tidpunkt, kundens id, kategorisering av ärendet, en beskrivning av ärendet, ärendestatus. -->
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Customer: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
@@ -39,7 +39,7 @@
 
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Description: " FontWeight="Bold" Padding="0, 0, 5, 0"/>
-                        <TextBlock Text="{Binding Description}" IsTextSelectionEnabled="True" />
+                        <TextBlock Text="{Binding Description}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal">
@@ -47,14 +47,23 @@
                         <TextBlock Text="{Binding Status}" IsTextSelectionEnabled="True" />
                     </StackPanel>
 
-                    <TextBlock Text="Comments: " FontWeight="Bold"/>
+                    <TextBlock Text="Comments: "/>
                     <ListView ItemsSource="{Binding Comments}">
                         <ListView.ItemTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Created}" Foreground="Gray" Padding="0, 0, 5, 0"/>
-                                    <TextBlock Text="{Binding Content}" />
-                                </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0" Foreground="Gray" 
+                                               FontSize="12" VerticalAlignment="Center" 
+                                               Text="{Binding Created}" />
+                                    <TextBlock Grid.Column="1" Margin="5, 0" 
+                                               TextWrapping="Wrap"
+                                               Text="{Binding Content}" />
+                                </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>
                     </ListView>
@@ -106,8 +115,7 @@
 
         <!-- ItemSource styrs programmatiskt från MainPage -->
         <controls:DataGrid x:Name="dgTicketTable" Grid.Row="1" 
-                           HorizontalAlignment="Stretch"
-                           AutoGenerateColumns="False" Width="auto"
+                           AutoGenerateColumns="False"
                            AreRowDetailsFrozen="False"
                            RowDetailsTemplate="{StaticResource RowDetailsTemplate}">
 
@@ -120,6 +128,15 @@
                             <Button x:Name="btnEditTicket" Click="btnEditTicket_Click" Content="&#xEB7E;" 
                                     FontFamily="Segoe MDL2 Assets" Background="{x:Null}"
                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                        </DataTemplate>
+                    </controls:DataGridTemplateColumn.CellTemplate>
+                </controls:DataGridTemplateColumn>
+
+                <!-- ID - "ihoptryckt" för att inte ta upp hela raden -->
+                <controls:DataGridTemplateColumn Header="ID" Width="SizeToHeader">
+                    <controls:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Id}" Padding="5" VerticalAlignment="Center" />
                         </DataTemplate>
                     </controls:DataGridTemplateColumn.CellTemplate>
                 </controls:DataGridTemplateColumn>
@@ -143,7 +160,7 @@
                 </controls:DataGridTemplateColumn>
 
                 <!-- Description -->
-                <controls:DataGridTemplateColumn Header="Description" >
+                <controls:DataGridTemplateColumn Header="Description" Width="*">
                     <controls:DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Description}" Padding="5" VerticalAlignment="Center"  
@@ -151,9 +168,18 @@
                         </DataTemplate>
                     </controls:DataGridTemplateColumn.CellTemplate>
                 </controls:DataGridTemplateColumn>
+                
+                <!-- Customer (DisplayName) -->
+                <controls:DataGridTemplateColumn Header="Customer">
+                    <controls:DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding TicketCustomer.DisplayName}" Padding="5" VerticalAlignment="Center" />
+                        </DataTemplate>
+                    </controls:DataGridTemplateColumn.CellTemplate>
+                </controls:DataGridTemplateColumn>
 
                 <!-- Status -->
-                <controls:DataGridTemplateColumn Header="Status" >
+                <controls:DataGridTemplateColumn Header="Status" Width="*">
                     <controls:DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding StatusString}" Padding="5" VerticalAlignment="Center" />

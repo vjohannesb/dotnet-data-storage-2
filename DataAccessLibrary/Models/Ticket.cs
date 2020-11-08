@@ -46,6 +46,10 @@ namespace DataAccessLibrary.Models
             AttachmentExtension = attachmentExtension;
             Type = type;
             Comments = comments;
+
+            // Om ärendet ex. hämtas från Azure & bifogad fil inte finns lagrad lokalt
+            if (AttachmentExtension != null)
+                DownloadAttachmentIfNotExist().GetAwaiter();
         }
 
         [JsonProperty(PropertyName = "id")]
@@ -72,7 +76,7 @@ namespace DataAccessLibrary.Models
             set
             {
                 _customerId = value;
-                TicketCustomer = ViewModel.customers.First(c => c.Id == _customerId);
+                TicketCustomer = ViewModel.Customers.First(c => c.Id == _customerId);
             } 
         }
 
@@ -88,7 +92,6 @@ namespace DataAccessLibrary.Models
                 _attachmentExtension = value;
                 if (_attachmentExtension != null)
                 {
-                    DownloadAttachmentIfNotExist().GetAwaiter();
                     AttachmentPath = "ms-appdata:///local/" + AttachmentFileName;
                     HasAttachment = true;
                 }
@@ -109,7 +112,10 @@ namespace DataAccessLibrary.Models
         // -- JsonIgnores --
 
         [JsonIgnore]
-        public string AttachmentFileName => Id + AttachmentExtension;
+        public string AttachmentFileName => 
+            AttachmentExtension != null 
+                                ? Id + AttachmentExtension 
+                                : null;
 
         // Visibility i detaljvy + om fil ska laddas upp/ner eller ej
         [JsonIgnore]

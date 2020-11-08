@@ -34,6 +34,7 @@
                 <TextBlock Text="Ticket created: " FontWeight="Bold" Foreground="Gray"/>
                 <TextBlock x:Name="tbCreated" Text="{x:Bind _ticket.Created}" Foreground="Gray" Margin="5, 0"/>
             </StackPanel>
+            <TextBlock Text="{x:Bind _ticket.Id}" IsTextSelectionEnabled="True"/>
         </StackPanel>
 
         <!-- Category combobox -->
@@ -41,7 +42,8 @@
                   Grid.Row="1" Grid.Column="0"
                   HorizontalAlignment="Stretch"
                   Padding="10" Margin="0, 10"
-                  ItemsSource="{x:Bind Categories}">
+                  ItemsSource="{x:Bind Categories}"
+                  SelectedItem="{x:Bind _ticket.Category}">
         </ComboBox>
 
         <!-- Status combobox -->
@@ -59,7 +61,8 @@
                   Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2"
                   HorizontalAlignment="Stretch" 
                   Padding="10" Margin="0, 10"
-                  ItemsSource="{x:Bind _customers}"
+                  ItemsSource="{x:Bind Customers}"
+                  SelectedItem="{x:Bind _ticket.TicketCustomer}"
                   DisplayMemberPath="CustomerDisplay"
                   SelectedValuePath="Id">
         </ComboBox>
@@ -85,8 +88,9 @@
                 Padding="8" HorizontalAlignment="Stretch"/>
 
         <!-- Comment ListView -->
-        <ListView Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="4" Header="Comments"
-                  ItemsSource="{x:Bind _ticket.Comments}">
+        <ListView x:Name="lvComments" Header="Comments"
+                  Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="4"
+                  ItemsSource="{x:Bind _ticket.Comments}" >
             <ListView.ItemTemplate>
                 <DataTemplate>
                     <Grid>
@@ -117,11 +121,9 @@
                        Margin="5, 0" Foreground="#FF555555"/>
         </StackPanel>
 
-        <!-- Cancel & Save Buttons -->
+        <!-- Save Button -->
         <StackPanel Orientation="Horizontal" Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="5"
                     HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
-            <Button x:Name="btnCancelEdit" Content="Cancel" Click="btnCancelEdit_Click"
-                        Padding="20, 8" Margin="5, 0"/>
             <Button x:Name="btnSaveEdit" Content="Save" Click="btnSaveEdit_Click"
                         Padding="20, 8" Margin="5, 0"/>
         </StackPanel>

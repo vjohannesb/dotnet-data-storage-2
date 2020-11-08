@@ -50,31 +50,51 @@ namespace DataAccessLibrary.Services
 
         public static async Task StoreFileAsync(StorageFile file, string ticketId)
         {
-            var localFile = await SaveFileLocally(file, ticketId);
-            await UploadFileToAzure(localFile);
+            try
+            {
+                var localFile = await SaveFileLocally(file, ticketId);
+                if (localFile != null)
+                    await UploadFileToAzure(localFile);
+                else
+                    await UploadFileToAzure(file);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
         // Kopierar filen till lokal mapp för "lättare" tillgång
         // Döper filen till ticketId för enkel koppling
         private static async Task<StorageFile> SaveFileLocally(StorageFile file, string ticketId)
-            => await file.CopyAsync(_localAppData, 
-                                    ticketId + file.FileType,
-                                    NameCollisionOption.ReplaceExisting);
+        {
+            try
+            {
+                return await file.CopyAsync(_localAppData,
+                                     ticketId + file.FileType,
+                                     NameCollisionOption.ReplaceExisting);
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine($"Could not save file {file.Name} locally. Error {e}.");
+                return null;
+            }
+        }
 
         // Laddar upp till Azure för "global" tillgång
-        private static async Task UploadFileToAzure(StorageFile file)
+        private static async Task UploadFileToAzure(StorageFile file, string fileName = null)
         {
-            _blobClient = _containerClient.GetBlobClient(file.Name);
+            _blobClient = _containerClient.GetBlobClient(fileName ?? file.Name);
 
             using FileStream fileStream = File.OpenRead(file.Path);
-            await _blobClient.UploadAsync(fileStream, true);
+            await _blobClient.UploadAsync(fileStream, overwrite: true);
             fileStream.Close();
         }
 
         /// <summary>
-        /// Deletes the file from Azure Blob Storage (using DeleteIfExistsAsync) and locally if found.
+        /// Deletes the file from Azure Blob Storage (using DeleteIfExistsAsync) and locally if exists
         /// </summary>
-        public static async Task DeleteFileIfExistAsync(string fileName)
+        public static async Task DeleteFileIfExists(string fileName)
         {
             try
             {
@@ -83,7 +103,7 @@ namespace DataAccessLibrary.Services
             }
             catch
             {
-                Debug.WriteLine($"{fileName} could not be found in Azure Blob Storage ({_containerClient.Uri})");
+                Debug.WriteLine($"{fileName} could not be deleted from Azure Blob Storage ({_containerClient.Uri})");
             }
 
             try
@@ -93,37 +113,41 @@ namespace DataAccessLibrary.Services
             }
             catch
             {
-                Debug.WriteLine($"{fileName} could not be found in {ApplicationData.Current.LocalFolder.Path}");
+                Debug.WriteLine($"{fileName} could not be deleted from {ApplicationData.Current.LocalFolder.Path}");
             }
         }
+
         /// <summary>
         /// Checks local application folder for attachment file, and downloads it from Azure Blob Storage if not found.
         /// </summary>
         public static async Task DownloadFileIfNotExistAsync(string fileName)
         {
-            try
-            {
-                var _file = await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
-            }
-            catch
+            if (fileName != null)
             {
                 try
                 {
-                    Debug.WriteLine($"{fileName} could not be not found in {ApplicationData.Current.LocalFolder} "
-                                   + "- downloading from Azure Blob Storage.");
-
-                    _blobClient = _containerClient.GetBlobClient(fileName);
-                    BlobDownloadInfo download = await _blobClient.DownloadAsync();
-
-                    using FileStream fileStream = File.OpenWrite($"{_localAppData.Path}\\{fileName}");
-                    await download.Content.CopyToAsync(fileStream);
-                    fileStream.Close();
+                    await ApplicationData.Current.LocalFolder.GetFileAsync(fileName);
                 }
                 catch
                 {
-                    Debug.WriteLine($"Could not download {fileName} from {_containerClient.Uri}");
-                }
+                    try
+                    {
+                        Debug.WriteLine($"{fileName} could not be not found in {ApplicationData.Current.LocalFolder} "
+                                       + "- downloading from Azure Blob Storage.");
 
+                        _blobClient = _containerClient.GetBlobClient(fileName);
+                        BlobDownloadInfo download = await _blobClient.DownloadAsync();
+
+                        using FileStream fileStream = File.OpenWrite($"{_localAppData.Path}\\{fileName}");
+                        await download.Content.CopyToAsync(fileStream);
+                        fileStream.Close();
+                    }
+                    catch
+                    {
+                        Debug.WriteLine($"Could not download {fileName} from {_containerClient.Uri}");
+                    }
+
+                }
             }
         }
 

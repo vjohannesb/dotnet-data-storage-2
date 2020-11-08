@@ -24,46 +24,22 @@ using DataAccessLibrary.Settings;
 using Windows.Storage.AccessCache;
 using System.Collections.ObjectModel;
 using Windows.Storage.Pickers;
-
-/* Ärendehanteringssystem
- * Meny till vänster
- *  - Navigera mellan lista & skapa nytt ärende
- *  
- * Information i ärende:
- *  Tidpunkt
- *  Kunden
- *  Kategorisering av ärende
- *  Ärendets status
- *  
- * Läsa inställningsfil i json
- *  Hur många avslutade ärenden som ska visas i listan?
- *  Ej påbörjade, aktiv, avslutad
- * 
- * Tryck på ärende => få upp detaljer
- * 
- * Sparas i en databaslösning
- *  SQL?
- *  
- * Gå att uppdatera ett ärende!
- * Ett sparat ärende ska inte kunna tas bort från systemet
- *  
- *  - VG -
- * Kommentera ärenden
- * Ladda upp bilder
- *  associera med ärendet
- */
+using Newtonsoft.Json;
+using Windows.ApplicationModel;
+using System.Linq.Expressions;
 
 
 namespace UwpApp
 {
     public sealed partial class MainPage : Page
     {
-        TicketCreationViewModel ticketCreationViewModel = new TicketCreationViewModel();
-        TicketListViewModel ticketListViewModel = new TicketListViewModel();
+        private TicketCreationViewModel ticketCreationViewModel = new TicketCreationViewModel();
+        private TicketListViewModel ticketListViewModel = new TicketListViewModel();
 
-        DataGrid ticketDataGrid => ticketListViewModel.ticketDataGrid;
-        TextBlock ticketListHeader => ticketListViewModel.ticketListHeader;
+        private DataGrid ticketDataGrid => ticketListViewModel.ticketDataGrid;
+        private TextBlock ticketListHeader => ticketListViewModel.ticketListHeader;
 
+        private StorageFolder _installedFolder = Package.Current.InstalledLocation;
         private bool _dbConnected = false;
 
         public MainPage()
@@ -71,32 +47,57 @@ namespace UwpApp
             InitializeComponent();
             ViewModel.mainPage = this;
 
+            InitSettingsAsync().GetAwaiter();
             InitDbAsync().GetAwaiter();
+        }
+
+        private async Task InitSettingsAsync()
+        {
+            try
+            {
+                ViewModel.ClientSettings = JsonConvert
+                    .DeserializeObject<ClientSettings>
+                    (await FileIO.ReadTextAsync
+                    (await _installedFolder
+                    .GetFileAsync("settings.json")));
+            }
+            catch
+            {
+                Debug.WriteLine("Settings file could not be read. Using standard settings.");
+            }
         }
 
         private async Task InitDbAsync()
         {
+            // Azure Blob Storage (måste vara först pga Tickets DownloadAttachmentIfNotExist)
+            if (await BlobService.InitStorageAsync())
+            {
+                tbLoadingBlob.Visibility = Visibility.Collapsed;
+                tbLoadingCosmos.Visibility = Visibility.Visible;
+            }
+            else
+                tbLoadingBlob.Text = "Could not connect to Azure Blob Storage!";
+
+
+            // Azure Cosmos DB
             if (await DbService.InitCosmosDbAsync())
             {
-                ViewModel.customers = await DbService.GetAllCustomersAsync();
+                ViewModel.Customers = await DbService.GetAllCustomersAsync();
+
+                if (ViewModel.Customers.Count < 3)
+                {
+                    await CreateMockCustomers();
+                    ViewModel.Customers = await DbService.GetAllCustomersAsync();
+                }
+
                 await DbService.UpdateTicketListAsync(); 
 
                 tbLoadingCosmos.Visibility = Visibility.Collapsed;
-                tbLoadingBlob.Visibility = Visibility.Visible;
+                _dbConnected = true;
             }
             else
                 tbLoadingCosmos.Text = "Could not connect to Cosmos DB!";
 
-            // Kör denna en gång för att skapa customers i CosmosDb
-            // await CreateMockCustomers();
-
-            if (await BlobService.InitStorageAsync())
-            {
-                tbLoadingBlob.Visibility = Visibility.Collapsed;
-                _dbConnected = true;
-            }
-            else
-                tbLoadingBlob.Text = "Could not connect to Azure Blob Storage!";
         }
 
         private static async Task CreateMockCustomers()
