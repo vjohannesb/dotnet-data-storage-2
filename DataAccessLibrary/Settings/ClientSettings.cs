@@ -9,9 +9,6 @@ namespace DataAccessLibrary.Settings
 {
     public class ClientSettings
     {
-        /// <summary>
-        /// An empty constructor for initializing with standard settings.
-        /// </summary>
         public ClientSettings() {}
 
         [JsonConstructor]

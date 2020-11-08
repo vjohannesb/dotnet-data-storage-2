@@ -36,16 +36,11 @@ namespace DataAccessLibrary.Services
                         _containerClient = blobServiceClient.GetBlobContainerClient(Config.BlobContainerName);
                         return true;
                     }
-                    catch 
-                    {
-                        return false;
-                    }
+                    catch
+                    { return false; }
                 }
-            } 
-            catch 
-            {
-                return false;
             }
+            catch { return false; }
         }
 
         public static async Task StoreFileAsync(StorageFile file, string ticketId)
@@ -56,12 +51,9 @@ namespace DataAccessLibrary.Services
                 if (localFile != null)
                     await UploadFileToAzure(localFile);
                 else
-                    await UploadFileToAzure(file);
+                    await UploadFileToAzure(file, ticketId);
             }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            catch (Exception ex) { throw ex; }
         }
 
         // Kopierar filen till lokal mapp för "lättare" tillgång
@@ -76,7 +68,7 @@ namespace DataAccessLibrary.Services
             }
             catch (Exception e)
             {
-                Debug.WriteLine($"Could not save file {file.Name} locally. Error {e}.");
+                Debug.WriteLine($"Could not save file {file.Name} locally. {e.Message}.");
                 return null;
             }
         }
@@ -91,9 +83,8 @@ namespace DataAccessLibrary.Services
             fileStream.Close();
         }
 
-        /// <summary>
-        /// Deletes the file from Azure Blob Storage (using DeleteIfExistsAsync) and locally if exists
-        /// </summary>
+
+        // Radera från Azure och lokalt (om det går)
         public static async Task DeleteFileIfExists(string fileName)
         {
             try
@@ -117,9 +108,7 @@ namespace DataAccessLibrary.Services
             }
         }
 
-        /// <summary>
-        /// Checks local application folder for attachment file, and downloads it from Azure Blob Storage if not found.
-        /// </summary>
+        // Om ärendet har en bifogad fil men filen inte finns lokalt, ladda ned den
         public static async Task DownloadFileIfNotExistAsync(string fileName)
         {
             if (fileName != null)
@@ -146,7 +135,6 @@ namespace DataAccessLibrary.Services
                     {
                         Debug.WriteLine($"Could not download {fileName} from {_containerClient.Uri}");
                     }
-
                 }
             }
         }

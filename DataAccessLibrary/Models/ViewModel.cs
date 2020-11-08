@@ -6,7 +6,8 @@ using Windows.UI.Xaml.Controls;
 
 namespace DataAccessLibrary.Models
 {
-    public class ViewModel
+    // Använder ViewModel som samlingsfil för allmänt accessbara objekt
+    public static class ViewModel
     {
         public static ObservableCollection<Ticket> OpenTickets { get; set; } = new ObservableCollection<Ticket>();
         public static ObservableCollection<Ticket> ClosedTickets { get; set; } = new ObservableCollection<Ticket>();
@@ -15,9 +16,8 @@ namespace DataAccessLibrary.Models
 
         public static ClientSettings ClientSettings { get; set; } = new ClientSettings();
 
-        public static ObservableCollection<Ticket> previousView { get; set; }
-
-        public static Page mainPage;
+        // Referens till huvudsidan för navigation inifrån contentcontrol
+        public static Page MainPage { get; set; }
 
     }
 }

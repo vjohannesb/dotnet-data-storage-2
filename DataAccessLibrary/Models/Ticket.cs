@@ -1,16 +1,10 @@
 ﻿using DataAccessLibrary.Services;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.Storage;
-using Windows.UI.Xaml;
-using Windows.UI.Xaml.Media.Imaging;
 
 namespace DataAccessLibrary.Models
 {
@@ -76,13 +70,21 @@ namespace DataAccessLibrary.Models
             set
             {
                 _customerId = value;
-                TicketCustomer = ViewModel.Customers.First(c => c.Id == _customerId);
+                try
+                {
+                    TicketCustomer = ViewModel.Customers.First(c => c.Id == _customerId);
+                } 
+                catch (Exception ex) 
+                { 
+                    Debug.WriteLine($"Could not find customer {_customerId} in customer-list. {ex.Message}"); 
+                }
             } 
         }
 
-        // För att bara behöva lagra en variabel i Cosmos DB
-        // som indikation på om ärendet har en attachment eller inte
-        // och samtidigt kunna använda Cosmos' JsonSerializer
+        // Lite dumsnålt kanske men lagrar bara filtypen som indikation
+        // på huruvida ärendet har en tillhörande fil eller ej.
+        // Minskar lagring + anslutningar. Filen döps efter ticket-id.
+        // Settern sätter användbara properties som används lokalt i appen
         [JsonProperty(PropertyName = "attachmentExtension")]
         public string AttachmentExtension
         {
@@ -106,6 +108,8 @@ namespace DataAccessLibrary.Models
         [JsonProperty(PropertyName = "type")]
         public string Type { get; }
 
+        // Per Microsofts egna dokumentation kring när data ska samlagras
+        // fann jag det lämpligast att lagra kommentarer direkt i ärendet
         [JsonProperty(PropertyName = "comments")]
         public ObservableCollection<Comment> Comments { get; set; }
 
@@ -117,19 +121,20 @@ namespace DataAccessLibrary.Models
                                 ? Id + AttachmentExtension 
                                 : null;
 
-        // Visibility i detaljvy + om fil ska laddas upp/ner eller ej
+        // Används bl.a. i XAML
         [JsonIgnore]
         public bool HasAttachment { get; set; } = false;
 
-        // Lokal path till bifogad fil, sätts initiellt av SetAttachmentExtension
+        // Sätts av SetAttachmentExtension, används i XAML för att visa bilden
         [JsonIgnore]
         public string AttachmentPath { get; set; }
 
-        // För att visa status i XAML
+        // För att visa status i XAML utan egna konverterare
         [JsonIgnore]
         public string StatusString => Status.ToString();
 
         // För att lagra Customer lokalt istället för på Cosmos DB
+        // Hämtas vid konstruktion genom CustomerId som lagras på cosmos
         [JsonIgnore]
         public Customer TicketCustomer { get; private set; }
 

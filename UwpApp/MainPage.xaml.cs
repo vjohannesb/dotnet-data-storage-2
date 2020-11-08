@@ -45,7 +45,7 @@ namespace UwpApp
         public MainPage()
         {
             InitializeComponent();
-            ViewModel.mainPage = this;
+            ViewModel.MainPage = this;
 
             InitSettingsAsync().GetAwaiter();
             InitDbAsync().GetAwaiter();

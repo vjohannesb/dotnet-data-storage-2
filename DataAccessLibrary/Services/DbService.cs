@@ -22,8 +22,7 @@ namespace DataAccessLibrary.Services
         private static Database database;
         private static Container container;
 
-        private static bool _dbLoaded = false;
-
+        /* -- INITIALIZE DATABASE -- */
         private static async Task CreateDatabaseAsync()
             => database = await cosmosClient
                 .CreateDatabaseIfNotExistsAsync(Config.DatabaseName, throughput: 400);
@@ -44,7 +43,7 @@ namespace DataAccessLibrary.Services
 
                 await CreateDatabaseAsync();
                 await CreateContainerAsync();
-                _dbLoaded = true;
+
                 return true;
             }
             catch
@@ -53,42 +52,25 @@ namespace DataAccessLibrary.Services
             }
         }
 
-        // Funktion för att kolla så att cosmos db är laddad
-        private static async Task WaitForDb()
-        {
-            while (!_dbLoaded)
-                await Task.Delay(1000);
-        }
 
-        public static async Task<List<Customer>> GetAllCustomersAsync()
-        {
-            await WaitForDb();
-
-            var customers = new List<Customer>();
-            var query = new QueryDefinition("SELECT * FROM items WHERE items.type = \"customer\" ");
-            FeedIterator<Customer> result = container.GetItemQueryIterator<Customer>(query);
-
-            while (result.HasMoreResults)
-                foreach (var customer in await result.ReadNextAsync())
-                    customers.Add(customer);
-
-            return customers;
-        }
-
-        public static async Task AddTicketAsync(Ticket ticket) 
+        /* -- CREATE -- */
+        public static async Task AddTicketAsync(Ticket ticket)
             => await container.CreateItemAsync(ticket);
 
+        public static async Task AddCustomerAsync(Customer customer)
+            => await container.CreateItemAsync(customer);
+
+
+        /* -- READ -- */
         public static async Task<List<Ticket>> GetClosedTicketsAsync()
         {
-            await WaitForDb();
-
             var take = ViewModel.ClientSettings.ClosedTicketTake;
             var tickets = new List<Ticket>();
 
-            var query = new QueryDefinition("SELECT * FROM items" 
-                                            + " WHERE items.type = \"ticket\"" 
-                                            + " AND items.status = 2" 
-                                            + " ORDER BY items.created DESC" 
+            var query = new QueryDefinition("SELECT * FROM items"
+                                            + " WHERE items.type = \"ticket\""
+                                            + " AND items.status = 2"
+                                            + " ORDER BY items.created DESC"
                                             + " OFFSET 0 LIMIT " + take.ToString());
 
             FeedIterator<Ticket> result = container.GetItemQueryIterator<Ticket>(query);
@@ -102,8 +84,6 @@ namespace DataAccessLibrary.Services
 
         public static async Task<List<Ticket>> GetOpenTicketsAsync()
         {
-            await WaitForDb();
-
             var tickets = new List<Ticket>();
 
             var query = new QueryDefinition("SELECT * FROM items"
@@ -120,21 +100,21 @@ namespace DataAccessLibrary.Services
             return tickets;
         }
 
-        public static async Task UpdateTicketAsync(Ticket ticket)
+        public static async Task<List<Customer>> GetAllCustomersAsync()
         {
-            try
-            {
-                await container.ReplaceItemAsync(ticket, ticket.Id, new PartitionKey(ticket.Id));
-            }
-            catch { Debug.WriteLine($"Ticket {ticket.Id} could not be found in Cosmos Db."); }
+            var customers = new List<Customer>();
+            var query = new QueryDefinition("SELECT * FROM items WHERE items.type = \"customer\" ");
+            FeedIterator<Customer> result = container.GetItemQueryIterator<Customer>(query);
+
+            while (result.HasMoreResults)
+                foreach (var customer in await result.ReadNextAsync())
+                    customers.Add(customer);
+
+            return customers;
         }
 
-        public static async Task UpdateTicketListAsync()
-        {
-            await UpdateClosedTicketsAsync();
-            await UpdateOpenTicketsAsync();
-        }
 
+        /* -- UPDATE -- */
         public static async Task UpdateClosedTicketsAsync()
         {
             ViewModel.ClosedTickets.Clear();
@@ -153,7 +133,19 @@ namespace DataAccessLibrary.Services
                 ViewModel.OpenTickets.Add(ticket);
         }
 
-        public static async Task AddCustomerAsync(Customer customer)
-            => await container.CreateItemAsync(customer);
+        public static async Task UpdateTicketListAsync()
+        {
+            await UpdateClosedTicketsAsync();
+            await UpdateOpenTicketsAsync();
+        }
+
+        public static async Task UpdateTicketAsync(Ticket ticket)
+        {
+            try
+            {
+                await container.ReplaceItemAsync(ticket, ticket.Id, new PartitionKey(ticket.Id));
+            }
+            catch { Debug.WriteLine($"Ticket {ticket.Id} could not be found in Cosmos Db."); }
+        }
     }
 }
